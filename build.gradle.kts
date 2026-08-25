@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.cardbilling"
-version = "0.0.1-SNAPSHOT"
+version = "1.0.0-SNAPSHOT"
 description = "External statement ingest and matching, via indexed lookup instead of a nested loop"
 
 java {
