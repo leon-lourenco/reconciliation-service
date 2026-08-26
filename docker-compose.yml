@@ -1,0 +1,46 @@
+# Everything this service needs to run on its own: its own database, and a Keycloak to get a token
+# from. billing-service is not started here - bring it up from its own repo, or use the
+# full-platform compose file in card-billing-modernization to run all four services together.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: reconciliation
+      POSTGRES_USER: reconciliation
+      POSTGRES_PASSWORD: reconciliation
+    ports:
+      # 5436 on the host: card-billing-legacy already holds 5433, and each modernized service gets
+      # its own database rather than sharing one, so each needs its own port.
+      - "5436:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reconciliation"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      # Stopgap: ARCHITECTURE.md has the realm export shared by all four services from the
+      # card-billing-shared submodule. That repo does not exist yet, so a local copy is imported
+      # here and moves out once it does.
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+volumes:
+  postgres-data:
