@@ -28,9 +28,17 @@ spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-
 spring-boot-starter-aspectj = { module = "org.springframework.boot:spring-boot-starter-aspectj" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+# Boot 4 split the per-technology test slices out of spring-boot-test-autoconfigure; MockMvc's
+# @AutoConfigureMockMvc now lives in this module.
+spring-boot-webmvc-test = { module = "org.springframework.boot:spring-boot-webmvc-test" }
 spring-security-test = { module = "org.springframework.security:spring-security-test" }
 
 postgresql = { module = "org.postgresql:postgresql" }
+# Boot 4 moved auto-configuration into per-technology modules. spring-boot-flyway is the one that
+# runs migrations on startup (flyway-core alone only puts the library on the classpath);
+# spring-boot-restclient is the one that contributes the RestClient.Builder the billing client uses.
+spring-boot-flyway = { module = "org.springframework.boot:spring-boot-flyway" }
+spring-boot-restclient = { module = "org.springframework.boot:spring-boot-restclient" }
 flyway-core = { module = "org.flywaydb:flyway-core" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 opencsv = { module = "com.opencsv:opencsv", version.ref = "opencsv" }

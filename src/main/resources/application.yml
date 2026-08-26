@@ -1,0 +1,91 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: reconciliation-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5436/reconciliation
+    username: reconciliation
+    password: reconciliation
+
+  jpa:
+    # Flyway owns the schema (src/main/resources/db/migration). Hibernate only checks that what it
+    # was told to expect is actually there - the indexes this service reads through are the point
+    # of it, so they are written down rather than inferred.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  servlet:
+    multipart:
+      max-file-size: 128MB
+      max-request-size: 128MB
+      # Anything past this is spooled to disk rather than held in the heap: ingest streams the file,
+      # so the container should not be the thing that buffers it whole.
+      file-size-threshold: 256KB
+
+  security:
+    oauth2:
+      # As a client: gets its own token before calling billing-service.
+      client:
+        registration:
+          billing-service:
+            provider: keycloak
+            client-id: reconciliation-service
+            client-secret: local-development-secret
+            authorization-grant-type: client_credentials
+        provider:
+          keycloak:
+            token-uri: http://localhost:8080/realms/card-billing/protocol/openid-connect/token
+      # As a resource server: nothing here answers without a valid token.
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/card-billing
+          jwk-set-uri: http://localhost:8080/realms/card-billing/protocol/openid-connect/certs
+
+billing:
+  base-url: http://localhost:8081
+  client-registration-id: billing-service
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      billingService:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+  retry:
+    instances:
+      billingService:
+        max-attempts: 3
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - com.cardbilling.reconciliation.application.port.BillingServiceUnavailableException
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+
+logging:
+  level:
+    com.cardbilling: info

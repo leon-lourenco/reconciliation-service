@@ -30,18 +30,21 @@ dependencies {
     implementation(libs.spring.boot.starter.oauth2.resource.server)
     implementation(libs.spring.boot.starter.oauth2.client)
 
+    implementation(libs.spring.boot.restclient)
     implementation(libs.resilience4j.spring.boot)
     implementation(libs.springdoc.openapi.starter.webmvc.ui)
     implementation(libs.opencsv)
 
     // The schema is written down and versioned rather than inferred by Hibernate: the indexes this
     // service reads through are the point of it, so they belong in a migration, not in ddl-auto.
+    implementation(libs.spring.boot.flyway)
     implementation(libs.flyway.core)
     runtimeOnly(libs.flyway.database.postgresql)
     runtimeOnly(libs.postgresql)
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.boot.testcontainers)
+    testImplementation(libs.spring.boot.webmvc.test)
     testImplementation(libs.spring.security.test)
     testImplementation(libs.testcontainers.junit.jupiter)
     testImplementation(libs.testcontainers.postgresql)
