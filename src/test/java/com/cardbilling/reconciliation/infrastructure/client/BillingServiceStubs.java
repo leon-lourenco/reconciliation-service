@@ -14,10 +14,9 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.time.LocalDate;
 
 /**
- * billing-service does not exist as a running service yet, so this is the one place its contract is
- * written down for this service's tests - the query parameters ARCHITECTURE.md pins, and the
- * response shape assumed on top of them (see {@link InvoiceSearchResponse} for what is assumed and
- * why). If billing-service ends up answering differently, this file is what has to change.
+ * The one place billing-service's real {@code GET /invoices/search} contract is written down for
+ * this service's tests - see {@link InvoiceSearchResponse}. If billing-service's response shape
+ * changes, this file is what has to change.
  */
 public final class BillingServiceStubs {
 
@@ -32,12 +31,12 @@ public final class BillingServiceStubs {
 
     public static String invoiceJson(long invoiceId, String documentNumber, long owedCents, LocalDate dueDate) {
         return """
-                {"id": %d, "documentNumber": "%s", "amountCents": %d, "dueDate": "%s", "status": "OVERDUE"}"""
+                {"id": %d, "documentNumber": "%s", "amountOwedCents": %d, "dueDate": "%s", "status": "OVERDUE"}"""
                 .formatted(invoiceId, documentNumber, owedCents, dueDate);
     }
 
     public static String searchResponse(String... invoices) {
-        return "{\"invoices\": [" + String.join(",", invoices) + "]}";
+        return "[" + String.join(",", invoices) + "]";
     }
 
     /** The amount-filtered lookup finds an invoice owing exactly what the statement line says. */

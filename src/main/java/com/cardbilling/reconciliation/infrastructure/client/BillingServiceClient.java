@@ -9,6 +9,7 @@ import io.github.resilience4j.retry.annotation.Retry;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -42,16 +43,16 @@ public class BillingServiceClient implements BillingServicePort {
     @CircuitBreaker(name = INSTANCE)
     @Retry(name = INSTANCE)
     public Optional<InvoiceCandidate> searchInvoice(String documentNumber, long amountCents, LocalDate aroundDate) {
-        InvoiceSearchResponse response = search(documentNumber, amountCents, aroundDate);
-        return response.invoicesOrEmpty().stream().findFirst().map(BillingServiceClient::toCandidate);
+        return search(documentNumber, amountCents, aroundDate).stream()
+                .findFirst()
+                .map(BillingServiceClient::toCandidate);
     }
 
     @Override
     @CircuitBreaker(name = INSTANCE)
     @Retry(name = INSTANCE)
     public List<InvoiceCandidate> searchInvoicesByDocument(String documentNumber, LocalDate aroundDate) {
-        InvoiceSearchResponse response = search(documentNumber, null, aroundDate);
-        return response.invoicesOrEmpty().stream().map(BillingServiceClient::toCandidate).toList();
+        return search(documentNumber, null, aroundDate).stream().map(BillingServiceClient::toCandidate).toList();
     }
 
     @Override
@@ -84,9 +85,9 @@ public class BillingServiceClient implements BillingServicePort {
     }
 
     /** One call to the indexed search. {@code amountCents} is left off for the divergence check. */
-    private InvoiceSearchResponse search(String documentNumber, Long amountCents, LocalDate aroundDate) {
+    private List<InvoiceSearchResponse> search(String documentNumber, Long amountCents, LocalDate aroundDate) {
         try {
-            InvoiceSearchResponse response = restClient.get()
+            InvoiceSearchResponse[] response = restClient.get()
                     .uri(uriBuilder -> {
                         uriBuilder.path(SEARCH_PATH)
                                 .queryParam("documentNumber", documentNumber)
@@ -104,18 +105,19 @@ public class BillingServiceClient implements BillingServicePort {
                                 throw new BillingServiceUnavailableException(
                                         "billing-service answered " + res.getStatusCode() + " to an invoice search");
                             })
-                    .body(InvoiceSearchResponse.class);
-            return response == null ? new InvoiceSearchResponse(List.of()) : response;
+                    .body(InvoiceSearchResponse[].class);
+            return response == null ? List.of() : Arrays.asList(response);
         } catch (RestClientException e) {
             throw new BillingServiceUnavailableException("billing-service could not be reached for an invoice search", e);
         }
     }
 
-    private static InvoiceCandidate toCandidate(InvoiceSearchResponse.Invoice invoice) {
-        if (invoice.id() == null || invoice.amountCents() == null || invoice.dueDate() == null) {
+    private static InvoiceCandidate toCandidate(InvoiceSearchResponse invoice) {
+        if (invoice.id() == null || invoice.amountOwedCents() == null || invoice.dueDate() == null) {
             throw new BillingServiceUnavailableException(
                     "billing-service returned an invoice without an id, amount or due date: " + invoice);
         }
-        return new InvoiceCandidate(invoice.id(), invoice.documentNumber(), invoice.amountCents(), invoice.dueDate());
+        return new InvoiceCandidate(
+                invoice.id(), invoice.documentNumber(), invoice.amountOwedCents(), invoice.dueDate());
     }
 }
