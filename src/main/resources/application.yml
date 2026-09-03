@@ -34,7 +34,7 @@ spring:
           billing-service:
             provider: keycloak
             client-id: reconciliation-service
-            client-secret: local-development-secret
+            client-secret: ${KEYCLOAK_CLIENT_SECRET:reconciliation-service-secret}
             authorization-grant-type: client_credentials
         provider:
           keycloak:

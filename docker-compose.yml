@@ -31,10 +31,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Stopgap: ARCHITECTURE.md has the realm export shared by all four services from the
-      # card-billing-shared submodule. That repo does not exist yet, so a local copy is imported
-      # here and moves out once it does.
-      - ./docker/keycloak:/opt/keycloak/data/import:ro
+      - ./card-billing-shared/keycloak:/opt/keycloak/data/import:ro
     healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"]
       interval: 10s

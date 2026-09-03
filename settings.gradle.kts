@@ -7,7 +7,10 @@ plugins {
 
 rootProject.name = "reconciliation-service"
 
-// Versions live in gradle/libs.versions.toml, which Gradle picks up as `libs` automatically.
-// ARCHITECTURE.md has every service consuming that catalog from the `card-billing-shared`
-// submodule instead; that repo does not exist yet, so the catalog is kept here in the same
-// shape and moves out wholesale once it does.
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            from(files("card-billing-shared/versions/libs.versions.toml"))
+        }
+    }
+}
